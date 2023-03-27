@@ -52,7 +52,7 @@ app
     .get("/dispatch/:post", (req: express.Request, res: express.Response) => dispatchController(req, res, trainList))
     .get("/train/:trainNo", (req: express.Request, res: express.Response) => trainTimetableController(req, res, trainList))
     .get("/steam/:steamId", getPlayer)
-    .get("/updater/:target/:current_version",checkupdate)
+    .get("/updater/:platform/:current_version",checkupdate)
 app.listen(process.env.LISTEN_PORT);
 
 console.log("🚆 Simrail Community EDR backend v2.0");
