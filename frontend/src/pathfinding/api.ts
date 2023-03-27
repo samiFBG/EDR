@@ -1,6 +1,8 @@
 import {Node, pathFind_stackMap} from "./data";
 import {haversine} from "../EDR/functions/vectors";
-import _ from "lodash";
+import _uniq from "lodash/uniq";
+import _intersection from "lodash/intersection";
+import _minBy from "lodash/minBy";
 import {console_log} from "../utils/Logger";
 import {postConfig, postToInternalIds} from "../config/stations";
 import { ExtendedStationConfig } from "../EDR/functions/trainDetails";
@@ -41,12 +43,13 @@ export const treeTraversal = (
     if (subTree.id === finish) return nxtAcc;
     const leftPath = treeTraversal(resolveSubNode(subTree.left), finish, nxtAcc);
     const rightPath = treeTraversal(resolveSubNode(subTree.right), finish, nxtAcc);
-    const branchPath = treeTraversal(resolveSubNode(subTree.branchA), finish, nxtAcc);
+    const branchPathA = treeTraversal(resolveSubNode(subTree.branchA), finish, nxtAcc);
+    const branchPathB = treeTraversal(resolveSubNode(subTree.branchB), finish, nxtAcc);
     // TODO: pathfinding lacks weight, wich is alright for now. (Rather good enough)
     // TODO: But it needs to take distance in count instead of number of stations
     // Else pendolino would take interesting routes lmao
-    const foundViaPath = [leftPath, rightPath, branchPath].filter((p) => p?.find((e) => via && e?.id === via))
-    return foundViaPath?.[0] ?? _.minBy([leftPath, rightPath, branchPath], 'length');
+    const foundViaPath = [leftPath, rightPath, branchPathA, branchPathB].filter((p) => p?.find((e) => via && e?.id === via))
+    return foundViaPath?.[0] ?? _minBy([leftPath, rightPath, branchPathA, branchPathB], 'length');
 }
 
 export const findPath = (start: ExtendedStationConfig, finish: string, via?: string): PathFindingLineTrace => {
@@ -69,9 +72,7 @@ export const PathFinding_FindPathAndHaversineSum = (start: string, finish: strin
         console.error("Pathfinding error ! ", {start, finish});
         return [undefined, 0];
     }
-    // console.log("Pah a ", pathA)
-    // console.log("Pah b ", pathB)
-    const lineTrace = _.uniq([...pathA, ...pathB])
+    const lineTrace = _uniq([...pathA, ...pathB])
     const filteredAllPosPoints: ([number, number])[] =  lineTrace?.map?.((node) =>  node?.platformPosOverride)
         ?.filter((v) => v && !!v[0] && !!v[1]) as [number, number][];
 
@@ -116,7 +117,7 @@ export const PathFinding_HasTrainPassedStation = (pfLineTrace: PathFindingLineTr
     const toIndex = intermediateLineTrace?.findIndex((e) => e?.id && e?.id === foundToPost);
     debug && console.log("TO in linetrace : ", {toIndex, formStation, intermediateLineTrace});
 
-    const intersect = _.intersection(intermediateLineTrace, intermediateLineTraceBetweenPostAndDestination);
+    const intersect = _intersection(intermediateLineTrace, intermediateLineTraceBetweenPostAndDestination);
     debug && console.log("Closest station id : ", closestStationId);
     debug && console.log("Intersect : ", intersect);
 

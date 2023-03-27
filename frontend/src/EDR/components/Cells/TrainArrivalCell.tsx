@@ -1,7 +1,6 @@
 import React from "react";
 import {Badge} from "flowbite-react";
 import {tableCellCommonClassnames} from "../TrainRow";
-import {getDateWithHourAndMinutes, getTimeDelay} from "../../functions/timeUtils";
 import {TimeTableRow} from "../../index";
 import {DetailedTrain} from "../../functions/trainDetails";
 import {useTranslation} from "react-i18next";
@@ -10,31 +9,25 @@ type Props = {
     ttRow: TimeTableRow;
     trainDetails: DetailedTrain;
     dateNow: Date;
-    serverTz: string;
+    serverTzOffset: number;
     trainHasPassedStation: boolean;
     expectedDeparture: Date;
     distanceFromStation: number;
-
     thirdColRef: any;
+    streamMode: boolean;
+    arrivalTimeDelay: number;
+    departureTimeDelay: number;
 }
 
 export const TrainArrivalCell: React.FC<Props> = ({
-    dateNow, ttRow, trainDetails, trainHasPassedStation, serverTz,
-    thirdColRef, expectedDeparture, distanceFromStation
+    ttRow, trainDetails, trainHasPassedStation,
+    thirdColRef, distanceFromStation, streamMode, arrivalTimeDelay, departureTimeDelay
 }) => {
     const {t} = useTranslation();
-    const [arrivalExpectedHours, arrivalExpectedMinutes] = ttRow.scheduled_arrival.split(":").map(value => parseInt(value));
-    const isArrivalNextDay = dateNow.getHours() >= 20 && arrivalExpectedHours < 12;  // TODO: less but still clunky
-    const isArrivalPreviousDay = arrivalExpectedHours >= 20 && dateNow.getHours() < 12; // TODO: less but still Clunky
-    const expectedArrival = getDateWithHourAndMinutes(dateNow, arrivalExpectedHours, arrivalExpectedMinutes, isArrivalNextDay, isArrivalPreviousDay);
-    const arrivalTimeDelay = getTimeDelay(dateNow, expectedArrival);
-    const departureTimeDelay = getTimeDelay(dateNow, expectedDeparture);
-
-
     return (
-        <td className={tableCellCommonClassnames} ref={thirdColRef}>
+        <td className={tableCellCommonClassnames(streamMode)} ref={thirdColRef}>
             <div className="flex items-center justify-center h-full">
-                {ttRow.scheduled_arrival}&nbsp;
+                {ttRow.arrival_time}&nbsp;
                 {
                     !trainHasPassedStation && arrivalTimeDelay > 0 && trainDetails && departureTimeDelay > 0
                         ? <span

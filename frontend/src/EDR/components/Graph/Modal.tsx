@@ -1,6 +1,7 @@
 import React, {ReactNode} from "react";
 import {Button, Modal} from "flowbite-react";
 import {useTranslation} from "react-i18next";
+import {frameHeight} from "../SimRailMapModal";
 
 export type GraphModalProps = {
     children: ReactNode;
@@ -8,11 +9,10 @@ export type GraphModalProps = {
     onClose: () => void;
 }
 
-const frameHeight = "h-[300px] md:h-[400px] lg:h-[600px] min-w-full"
 export const GraphModal: React.FC<GraphModalProps> = ({children, isOpen, onClose}) => {
     const {t} = useTranslation();
     return (
-        <Modal className="z-50" position="bottom-center" show={isOpen}  size="9xl" onClose={onClose} style={{zIndex: 999999}}>
+        <Modal className="z-50" position="top-center" show={isOpen}  size="9xl" onClose={onClose} style={{zIndex: 999999}}>
         <Modal.Header>
             <div className="flex justify-between w-full">
                 <span>{t("EDR_GRAPH_title")}</span>
