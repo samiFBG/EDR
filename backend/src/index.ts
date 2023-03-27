@@ -1,60 +1,34 @@
 import express from "express";
 import morgan from "morgan";
-import cors, { CorsOptions } from "cors";
-import compression from "compression";
-import fs from "fs";
-import Cron from "cron";
+import cors from "cors";
 const app = express();
 const Logger = morgan('short');
 
-import {dispatchController, trainTimetableController} from "./dispatchController.js";
-import {getServerList, getStationsList, getTrainsList, getServerTz, getPlayer, getFullTimetable} from "./serverController.js";
-import helmet from "helmet";
-import { IServerTrain } from "./interfaces/IServerTrain.js";
-import {checkupdate} from "./updaterController.js";
+import { dispatchController } from "./dispatchController";
+import {getPlayer, getServerList, getStationsList, getTrainsList} from "./serverController";
 
-let trainList: IServerTrain[];
-const updateTimetable = (serverCode: string) => {
-    getFullTimetable(serverCode).then((response) => {
-        trainList = response.data as IServerTrain[];
-    }).catch(() => {
-        console.log("Error while requesting official timetable data from the API, falling back to the bundled version!")
-        trainList = JSON.parse(fs.readFileSync("official-edr-data_static.json", "utf8")) as IServerTrain[];
-    })
-}
-
-const cronTimetableUpdater = new Cron.CronJob(
-    '0 4 * * *',
-    () => { updateTimetable("en1")},
-    null,
-    false,
-    'Europe/Warsaw'
-);
-
-cronTimetableUpdater.start();
-updateTimetable('en1');
-
-const corsConfig: CorsOptions = {
-    allowedHeaders: "content-type",
+const corsConfig = {
+    allowedHeaders: "x-debug",
     maxAge: 3600
 };
 
-app.use(cors(corsConfig)).use(Logger).use(helmet()).use(express.json()).use(compression());
+// TODO: Consider using HelmetJS as well - https://helmetjs.github.io/
+app.use(cors(corsConfig)).use(Logger);
+
 app
     /*.set("etag", false)
     .set("Cache-control", "no-cache")*/
     .options('*', cors(corsConfig))
-    .get("/", (req: express.Request, res: express.Response) => res.send("Simrail Community EDR"))
+    .get("/", (req: express.Request, res: express.Response) => res.send("SR Community EDR !"))
     .get("/servers", getServerList)
-    .get("/server/tz/:serverCode", getServerTz)
-    .get("/stations/:serverCode", getStationsList)
-    .get("/trains/:serverCode", getTrainsList)
-    .get("/dispatch/:post", (req: express.Request, res: express.Response) => dispatchController(req, res, trainList))
-    .get("/train/:trainNo", (req: express.Request, res: express.Response) => trainTimetableController(req, res, trainList))
-    .get("/steam/:steamId", getPlayer)
-    .get("/updater/:platform/:current_version",(req, res)=>checkupdate(req, res))
-app.listen(process.env.LISTEN_PORT);
+    .get("/stations/:serverCode", (req: express.Request, res: express.Response) => getStationsList(req, res, req.params['serverCode']))
+    .get("/trains/:serverCode", (req: express.Request, res: express.Response) => getTrainsList(req, res, req.params['serverCode']))
+    .get("/dispatch/:post", dispatchController)
+    .get("/dispatch/:serverCode/:post", dispatchController) // Temporary fallback for old client versions
+    .get("/steam/:steamId", (req, res) => getPlayer(req, res, req.params['steamId']))
+app.listen(8080)
 
-console.log("🚆 Simrail Community EDR backend v2.0");
+console.log("🚆 Simrail Community EDR backend v1.0");
 console.log("💻 https://github.com/simrail/EDR");
-console.log("🐛 https://github.com/simrail/EDR/issues")
+console.log("🐛 https://github.com/DKFN/edr-issues")
+console.log("Steam API key ? ", !!process.env["STEAM_KEY"]);
